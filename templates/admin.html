@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% block title %}Quản lý | Lái{% endblock %}
+{% block content %}
+<section class="admin-layout">
+  <div class="brutal-card database-panel">
+    <div class="panel-head">
+      <div>
+        <h1>Database hiện có</h1>
+        <p class="muted">{{ total }} dòng</p>
+      </div>
+      <div class="dropdown">
+        <button class="ghost-btn" data-open-dropdown="export-menu">Tải dữ liệu</button>
+        <div class="dropdown-menu" id="export-menu">
+          <a href="{{ url_for('export_excel') }}">Tải Excel</a>
+          <a href="{{ url_for('export_csv') }}">Tải CSV</a>
+        </div>
+      </div>
+    </div>
+
+    <form class="toolbar" method="get" action="{{ url_for('admin') }}">
+      <input name="search" placeholder="Tìm..." value="{{ search or '' }}">
+      <select name="label">
+        <option value="all" {% if filter_label == 'all' %}selected{% endif %}>Nhãn: tất cả</option>
+        <option value="sensitive" {% if filter_label == 'sensitive' %}selected{% endif %}>Nhạy cảm</option>
+        <option value="typo" {% if filter_label == 'typo' %}selected{% endif %}>Sai chính tả</option>
+        <option value="forced" {% if filter_label == 'forced' %}selected{% endif %}>Hơi gượng</option>
+        <option value="not_meaningful" {% if filter_label == 'not_meaningful' %}selected{% endif %}>Không tròn nghĩa</option>
+        <option value="none" {% if filter_label == 'none' %}selected{% endif %}>Không nhãn</option>
+      </select>
+      <select name="limit">
+        {% for size in [10, 20, 50, 100] %}
+          <option value="{{ size }}" {% if limit == size %}selected{% endif %}>{{ size }}/trang</option>
+        {% endfor %}
+      </select>
+      <button class="primary-btn small-btn" type="submit">Lọc</button>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cụm đầu</th>
+            <th>Cụm lái</th>
+            <th>Nhãn</th>
+            <th>User</th>
+            <th>Admin</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pair in pairs %}
+            <tr>
+              <td>{{ pair.original_text }}</td>
+              <td>{{ pair.flipped_text }}</td>
+              <td class="labels-cell">
+                <div class="labels-wrap">
+                  {% if pair.is_sensitive %}<span class="pill sensitive">Nhạy cảm</span>{% endif %}
+                  {% if pair.is_intentional_typo %}<span class="pill warn">Sai chính tả</span>{% endif %}
+                  {% if pair.is_forced %}<span class="pill forced">Hơi gượng</span>{% endif %}
+                  {% if pair.is_not_meaningful %}<span class="pill not-meaningful">Không tròn nghĩa</span>{% endif %}
+                  <span class="pill score">Hay {{ pair.fun_score }}/10</span>
+                  {% if not pair.is_sensitive and not pair.is_intentional_typo and not pair.is_forced and not pair.is_not_meaningful %}<span class="pill clean">Không nhãn</span>{% endif %}
+                </div>
+              </td>
+              <td>{{ pair.created_email or '-' }}</td>
+              <td>{{ pair.approved_email or '-' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('remove_pair', pair_id=pair.id) }}" data-confirm="Gỡ dòng này khỏi database và đưa lại vào mục duyệt?" data-confirm-title="Xác nhận gỡ">
+                  <button class="danger-btn small-btn" type="submit">Gỡ</button>
+                </form>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6" class="empty-cell">Chưa có dữ liệu.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      {% set prev_page = page - 1 %}
+      {% set next_page = page + 1 %}
+      {% if page > 1 %}
+        <a class="ghost-btn" href="{{ url_for('admin', page=prev_page, limit=limit, search=search, label=filter_label) }}">Trước</a>
+      {% else %}
+        <span class="ghost-btn disabled">Trước</span>
+      {% endif %}
+      <span>Trang {{ page }} / {{ total_pages }}</span>
+      {% if page < total_pages %}
+        <a class="ghost-btn" href="{{ url_for('admin', page=next_page, limit=limit, search=search, label=filter_label) }}">Sau</a>
+      {% else %}
+        <span class="ghost-btn disabled">Sau</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="side-stack">
+    <div class="brutal-card suggestion-panel">
+      <h1>Đề xuất</h1>
+      <p class="muted">{{ suggestions|length }} chờ duyệt</p>
+      <div class="suggestion-list">
+        {% for item in suggestions %}
+          <article class="suggestion-card editable-suggestion">
+            <div class="pair-line">
+              <strong>{{ item.original_text }}</strong>
+              <span class="arrow">→</span>
+              <strong>{{ item.flipped_text }}</strong>
+            </div>
+            <p class="muted">User: {{ item.user_email }}</p>
+            <form method="post" action="{{ url_for('approve_suggestion', suggestion_id=item.id) }}" class="suggestion-edit-form">
+              <div class="edit-grid">
+                <label>
+                  <span>Cụm đầu</span>
+                  <input name="original_text" value="{{ item.original_text }}" required>
+                </label>
+                <label>
+                  <span>Cụm lái</span>
+                  <input name="flipped_text" value="{{ item.flipped_text }}" required>
+                </label>
+              </div>
+              <div class="mini-checks">
+                <label class="check-chip">
+                  <input type="checkbox" name="is_sensitive" {% if item.is_sensitive %}checked{% endif %}>
+                  <span>Nhạy cảm</span>
+                </label>
+                <label class="check-chip">
+                  <input type="checkbox" name="is_intentional_typo" {% if item.is_intentional_typo %}checked{% endif %}>
+                  <span>Sai chính tả</span>
+                </label>
+                <label class="check-chip">
+                  <input type="checkbox" name="is_forced" {% if item.is_forced %}checked{% endif %}>
+                  <span>Hơi gượng</span>
+                </label>
+                <label class="check-chip">
+                  <input type="checkbox" name="is_not_meaningful" {% if item.is_not_meaningful %}checked{% endif %}>
+                  <span>Không tròn nghĩa</span>
+                </label>
+                {% if item.user_status == 'blocked' %}<span class="pill danger">Blocked</span>{% endif %}
+              </div>
+              <label class="range-field mini-range">
+                <span>Độ hay: <b data-range-value>{{ item.fun_score }}</b>/10</span>
+                <input type="range" name="fun_score" min="0" max="10" value="{{ item.fun_score }}" data-range-input>
+              </label>
+              <button class="primary-btn small-btn" type="submit">Duyệt bản này</button>
+            </form>
+            <div class="action-row secondary-actions">
+              <form method="post" action="{{ url_for('reject_suggestion', suggestion_id=item.id) }}">
+                <input type="hidden" name="reason" value="Admin đã bỏ đề xuất.">
+                <button class="ghost-btn small-btn" type="submit">Bỏ</button>
+              </form>
+              <form method="post" action="{{ url_for('toggle_block_user', user_id=item.user_id) }}">
+                {% if item.user_status == 'blocked' %}
+                  <button class="success-btn small-btn" type="submit">Bỏ chặn</button>
+                {% else %}
+                  <button class="danger-btn small-btn" type="submit">Chặn</button>
+                {% endif %}
+              </form>
+            </div>
+          </article>
+        {% else %}
+          <p class="muted">Không có đề xuất.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="brutal-card users-panel">
+      <h1>Tài khoản</h1>
+      <div class="mini-table">
+        {% for user in users %}
+          <div class="user-row admin-user-row">
+            <div class="user-main-info">
+              <strong>{{ user.name }}</strong>
+              <p class="muted">{{ user.email }}</p>
+              <p class="muted">{{ user.role }} · {{ user.status }} · {{ user.suggestion_count }} đề xuất</p>
+            </div>
+            {% if user.role != 'admin' %}
+              <div class="admin-user-actions">
+                <form method="post" action="{{ url_for('toggle_block_user', user_id=user.id) }}">
+                  {% if user.status == 'blocked' %}
+                    <button class="success-btn small-btn" type="submit">Bỏ chặn</button>
+                  {% else %}
+                    <button class="danger-btn small-btn" type="submit">Chặn</button>
+                  {% endif %}
+                </form>
+                <button class="ghost-btn small-btn" type="button" data-open-modal="reset-user-{{ user.id }}">Reset mật khẩu</button>
+                <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id) }}" data-confirm="Xóa tài khoản user này? Database cụm từ đã duyệt vẫn được giữ, user có thể đăng ký lại từ đầu." data-confirm-title="Xác nhận xóa user">
+                  <button class="danger-btn small-btn" type="submit">Xóa user</button>
+                </form>
+              </div>
+            {% else %}
+              <span class="pill clean">Admin</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+</section>
+
+{% for user in users %}
+  {% if user.role != 'admin' %}
+    <div class="modal admin-reset-modal" id="reset-user-{{ user.id }}" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card small admin-reset-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="reset-title-{{ user.id }}">
+        <button class="modal-x" type="button" data-close-modal aria-label="Đóng">×</button>
+        <h1 id="reset-title-{{ user.id }}">Reset mật khẩu</h1>
+        <p class="muted reset-target">{{ user.name }} · {{ user.email }}</p>
+        <p class="muted">Mật khẩu cũ đã mã hóa, admin không xem được. Hãy đặt mật khẩu mới cho user này.</p>
+        <form class="form-stack reset-password-form-modal" method="post" action="{{ url_for('admin_reset_user_password', user_id=user.id) }}">
+          <label>
+            <span>Mật khẩu mới</span>
+            <input type="password" name="new_password" placeholder="Mật khẩu mới" minlength="6" required>
+          </label>
+          <label>
+            <span>Nhập lại mật khẩu</span>
+            <input type="password" name="confirm_password" placeholder="Nhập lại mật khẩu" minlength="6" required>
+          </label>
+          <div class="confirm-actions modal-actions">
+            <button class="ghost-btn" type="button" data-close-modal>Hủy</button>
+            <button class="danger-btn" type="submit">Đặt lại</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+{% endfor %}
+{% endblock %}

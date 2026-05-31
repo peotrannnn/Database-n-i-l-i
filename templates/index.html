@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Lái{% endblock %}
+{% block content %}
+<section class="home-center">
+  {% if current_user %}
+    <button class="primary-btn huge" data-open-modal="suggest-modal">Thêm cụm từ lái</button>
+  {% else %}
+    <button class="primary-btn huge" data-open-modal="login-required-modal">Thêm cụm từ lái</button>
+  {% endif %}
+</section>
+
+<div class="modal" id="suggest-modal" aria-hidden="true">
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-card">
+    <button class="modal-x" data-close-modal>×</button>
+    <h1>Thêm cụm từ lái</h1>
+    <form method="post" action="{{ url_for('suggest') }}" class="form-stack">
+      <label>
+        <span>Cụm ban đầu</span>
+        <input name="original_text" autocomplete="off" required>
+      </label>
+      <label>
+        <span>Cụm sau khi lái</span>
+        <input name="flipped_text" autocomplete="off" required>
+      </label>
+
+      <div class="label-grid">
+        <label class="check-row">
+          <input type="checkbox" name="is_sensitive">
+          <span>Nhạy cảm</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" name="is_intentional_typo">
+          <span>Chủ đích sai chính tả</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" name="is_forced">
+          <span>Hơi gượng</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" name="is_not_meaningful">
+          <span>Không tròn nghĩa</span>
+        </label>
+      </div>
+
+      <label class="range-field">
+        <span>Độ hay: <b data-range-value>5</b>/10</span>
+        <input type="range" name="fun_score" min="0" max="10" value="5" data-range-input>
+      </label>
+
+      <button class="primary-btn" type="submit">Đề xuất</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="login-required-modal" aria-hidden="true">
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-card small">
+    <button class="modal-x" data-close-modal>×</button>
+    <h1>Đăng nhập đã</h1>
+    <p class="muted">Cần tài khoản để gửi đề xuất.</p>
+    <div class="button-row">
+      <a class="primary-btn" href="{{ url_for('login') }}">Đăng nhập</a>
+      <a class="ghost-btn" href="{{ url_for('register') }}">Đăng ký</a>
+    </div>
+  </div>
+</div>
+
+<div class="site-mark" aria-label="Bản quyền">© TRANG WEB NÀY ĐƯỢC LÀM BỞI PEO TRAN 2026</div>
+
+{% if request.args.get('open_modal') == '1' and current_user %}
+<script>window.__OPEN_SUGGEST_MODAL__ = true;</script>
+{% endif %}
+{% endblock %}

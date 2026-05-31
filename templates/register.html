@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Đăng ký | Lái{% endblock %}
+{% block content %}
+<section class="auth-page">
+  <div class="brutal-card auth-card">
+    <h1>Đăng ký</h1>
+    <form method="post" class="form-stack">
+      <label>
+        <span>Username</span>
+        <input name="name" minlength="3" autocomplete="username" required>
+      </label>
+      <label>
+        <span>Email</span>
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label>
+        <span>Mật khẩu</span>
+        <input name="password" type="password" minlength="6" autocomplete="new-password" required>
+      </label>
+      <button class="primary-btn" type="submit">Đăng ký</button>
+    </form>
+    <p class="muted center auth-links">
+      <a href="{{ url_for('login') }}">Đăng nhập</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

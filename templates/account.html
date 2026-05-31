@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Tài khoản | Lái{% endblock %}
+{% block content %}
+<section class="page-grid two account-grid">
+  <div class="brutal-card">
+    <h1>Tài khoản</h1>
+    <form method="post" class="form-stack compact">
+      <input type="hidden" name="action" value="profile">
+      <label>
+        <span>Tên</span>
+        <input name="name" value="{{ current_user.name }}" required>
+      </label>
+      <label>
+        <span>Email</span>
+        <input value="{{ current_user.email }}" disabled>
+      </label>
+      <button class="primary-btn" type="submit">Lưu</button>
+    </form>
+  </div>
+
+  <div class="brutal-card">
+    <h1>Đổi mật khẩu</h1>
+    <form method="post" class="form-stack compact">
+      <input type="hidden" name="action" value="password">
+      <label>
+        <span>Mật khẩu hiện tại</span>
+        <input name="current_password" type="password" required>
+      </label>
+      <label>
+        <span>Mật khẩu mới</span>
+        <input name="new_password" type="password" minlength="6" required>
+      </label>
+      <label>
+        <span>Nhập lại mật khẩu mới</span>
+        <input name="confirm_password" type="password" minlength="6" required>
+      </label>
+      <button class="primary-btn" type="submit">Đổi mật khẩu</button>
+    </form>
+  </div>
+</section>
+
+<section class="brutal-card wide-card account-wide-card">
+  <h1>Đề xuất của tôi</h1>
+  <div class="suggestion-list flat">
+    {% for item in suggestions %}
+      <article class="suggestion-card">
+        <div>
+          <strong>{{ item.original_text }}</strong>
+          <span class="arrow">→</span>
+          <strong>{{ item.flipped_text }}</strong>
+        </div>
+        <div class="meta-row">
+          <span class="pill {{ item.status }}">
+            {% if item.status == 'pending' %}Chờ duyệt{% elif item.status == 'approved' %}Đã duyệt{% else %}Bị bỏ{% endif %}
+          </span>
+          {% if item.is_sensitive %}<span class="pill sensitive">Nhạy cảm</span>{% endif %}
+          {% if item.is_intentional_typo %}<span class="pill warn">Sai chính tả</span>{% endif %}
+          {% if item.is_forced %}<span class="pill forced">Hơi gượng</span>{% endif %}
+          {% if item.is_not_meaningful %}<span class="pill not-meaningful">Không tròn nghĩa</span>{% endif %}
+          <span class="pill score">Hay {{ item.fun_score }}/10</span>
+        </div>
+        {% if item.reject_reason %}
+          <p class="muted">Lý do: {{ item.reject_reason }}</p>
+        {% endif %}
+      </article>
+    {% else %}
+      <p class="muted">Chưa gửi đề xuất nào.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
